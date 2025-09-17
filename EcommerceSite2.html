@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Simple Ecommerce (Demo)</title>
+    <style>
+        /* Early Vietnam War inspired palette: olive drab, jungle greens, khaki and tan */
+        :root{
+            --bg:#3b5323; /* olive drab */
+            --panel:#2f4f2f; /* darker jungle green */
+            --accent:#c7b78a; /* khaki */
+            --muted:#9a8b6a; /* tan */
+            --text:#f2f2e6;
+            --danger:#8b2d2d;
+            --glass: rgba(255,255,255,0.04);
+            --card-shadow: 0 6px 18px rgba(0,0,0,0.35);
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+        }
+        html,body{
+            height:100%;
+            margin:0;
+            background: linear-gradient(180deg, var(--bg) 0%, #2f4020 60%);
+            color:var(--text);
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+        }
+
+        header{
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            padding:18px 10px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.08), transparent);
+            position:sticky;
+            top:0;
+            z-index:10;
+            box-shadow: var(--card-shadow);
+        }
+        .logo{
+            display:flex;
+            gap:12px;
+            align-items:center;
+            text-align:center;
+        }
+        .logo svg { width:56px; height:56px; }
+        .brand{
+            font-weight:700;
+            letter-spacing:1px;
+            font-size:20px;
+            color:var(--accent);
+        }
+
+        nav{
+            position:fixed;
+            top:22px;
+            right:22px;
+            display:flex;
+            gap:10px;
+            z-index:20;
+        }
+        .navbtn{
+            background:transparent;
+            border:1px solid rgba(255,255,255,0.08);
+            color:var(--text);
+            padding:8px 12px;
+            border-radius:8px;
+            cursor:pointer;
+            backdrop-filter: blur(4px);
+        }
+        .navbtn.active{ border-color:var(--accent); color:var(--accent); }
+
+        main{
+            padding:28px;
+            max-width:1100px;
+            margin:22px auto;
+        }
+        .grid{
+            display:grid;
+            grid-template-columns: repeat(auto-fill,minmax(220px,1fr));
+            gap:18px;
+        }
+        .card{
+            background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.06));
+            border-radius:12px;
+            padding:14px;
+            box-shadow: var(--card-shadow);
+            display:flex;
+            flex-direction:column;
+            gap:8px;
+        }
+        .thumb{
+            height:140px;
+            border-radius:8px;
+            background-size:cover;
+            background-position:center;
+            border:1px solid rgba(255,255,255,0.03);
+        }
+        .title{ font-weight:600; color:var(--accent); }
+        .price{ color:var(--muted); font-weight:700; }
+        .actions{ display:flex; gap:8px; margin-top:auto; }
+        .btn{
+            border:0;
+            padding:8px 10px;
+            border-radius:8px;
+            cursor:pointer;
+            background:var(--accent);
+            color:#111;
+            font-weight:700;
+        }
+        .btn.ghost{
+            background:transparent;
+            color:var(--text);
+            border:1px solid rgba(255,255,255,0.06);
+        }
+
+        /* Cart & forms */
+        .cart-list{ display:flex; flex-direction:column; gap:12px; }
+        .cart-item{
+            display:flex;
+            gap:12px;
+            align-items:center;
+            background:var(--glass);
+            padding:10px;
+            border-radius:10px;
+        }
+        .cart-item .ci-thumb{ width:72px; height:72px; border-radius:8px; background-size:cover; background-position:center; }
+        .qty{ display:flex; gap:6px; align-items:center; }
+        .qty input{ width:56px; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.06); background:transparent; color:var(--text); text-align:center; }
+
+        form{ display:flex; flex-direction:column; gap:10px; max-width:640px; }
+        input,textarea,select{
+            padding:10px;
+            border-radius:8px;
+            border:1px solid rgba(255,255,255,0.06);
+            background:rgba(0,0,0,0.08);
+            color:var(--text);
+        }
+        .muted{ color:var(--muted); font-size:13px; }
+
+        footer{ text-align:center; padding:22px; color:rgba(255,255,255,0.6); }
+
+        /* small screens */
+        @media (max-width:600px){
+            .logo svg{ width:44px; height:44px; }
+            nav{ top:10px; right:10px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo" aria-hidden="true">
+            <!-- simple military-styled emblem SVG -->
+            <svg viewBox="0 0 100 100" role="img" aria-label="Logo">
+                <defs>
+                    <linearGradient id="g" x1="0" x2="1">
+                        <stop offset="0" stop-color="#5a6e2f"/>
+                        <stop offset="1" stop-color="#2f4f2f"/>
+                    </linearGradient>
+                </defs>
+                <rect width="100" height="100" rx="14" fill="url(#g)"/>
+                <g transform="translate(12,12)">
+                    <path d="M38 4 L48 28 L76 28 L54 44 L62 76 L38 56 L14 76 L22 44 L0 28 L28 28 Z" fill="#c7b78a" />
+                </g>
+            </svg>
+            <div class="brand">BAYONETSY</div>
+        </div>
+    </header>
+
+    <nav>
+        <button class="navbtn" data-view="shop">Shop</button>
+        <button class="navbtn" data-view="cart">Cart (<span id="cart-count">0</span>)</button>
+        <button class="navbtn" data-view="checkout">Checkout</button>
+        <button class="navbtn" data-view="account">Account</button>
+    </nav>
+
+    <main id="app">
+        <!-- content rendered by JS -->
+    </main>
+
+    <footer>
+        Demo storefront • No real payments • Local data only
+    </footer>
+
+    <script>
+        // GitHub Copilot
+        // Items are defined here. To add/remove/change prices, edit this array.
+        const ITEMS = [
+            { id: 'm1', name: 'Canvas Field Jacket', price: 79.99, img: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#556B2F"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="40" fill="#D9C89C">Field Jacket</text></svg>`) },
+            { id: 'm2', name: 'Olive Backpack', price: 49.50, img: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#3b5323"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="40" fill="#C7B78A">Backpack</text></svg>`) },
+            { id: 'm3', name: 'Canteen', price: 14.00, img: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#2f4f2f"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="40" fill="#E8DCC2">Canteen</text></svg>`) },
+            { id: 'm4', name: 'Utility Boots', price: 99.99, img: 'data:image/svg+xml;utf8,' + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><rect width="100%" height="100%" fill="#425530"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-family="Arial" font-size="34" fill="#D1C3A0">Boots</text></svg>`) },
+        ];
+
+        // LocalStorage keys
+        const KEY_CART = 'ecom_cart_v1';
+        const KEY_ACCOUNTS = 'ecom_accounts_v1';
+        const KEY_USER = 'ecom_user_v1';
+
+        // Helpers for localStorage
+        const storage = {
+            getCart(){ try{ return JSON.parse(localStorage.getItem(KEY_CART) || '{}'); }catch(e){ return {}; }},
+            setCart(cart){ localStorage.setItem(KEY_CART, JSON.stringify(cart)); updateCartCount(); },
+            getAccounts(){ try{ return JSON.parse(localStorage.getItem(KEY_ACCOUNTS) || '[]'); }catch(e){ return []; }},
+            setAccounts(a){ localStorage.setItem(KEY_ACCOUNTS, JSON.stringify(a)); },
+            setUser(u){ localStorage.setItem(KEY_USER, JSON.stringify(u)); },
+            getUser(){ try{ return JSON.parse(localStorage.getItem(KEY_USER) || 'null'); }catch(e){ return null; } }
+        };
+
+        // Simple routing using data-view buttons
+        const app = document.getElementById('app');
+        const navBtns = document.querySelectorAll('.navbtn');
+
+        function showView(name){
+            navBtns.forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+            if(name==='shop') renderShop();
+            else if(name==='cart') renderCart();
+            else if(name==='checkout') renderCheckout();
+            else if(name==='account') renderAccount();
+        }
+
+        // Update cart count badge
+        function updateCartCount(){
+            const cart = storage.getCart();
+            const count = Object.values(cart).reduce((s,q)=>s+q,0);
+            document.getElementById('cart-count').textContent = count;
+        }
+
+        // Add to cart
+        function addToCart(id, qty=1){
+            const cart = storage.getCart();
+            cart[id] = (cart[id] || 0) + qty;
+            storage.setCart(cart);
+            showToast('Added to cart');
+            renderShop(); // update any buttons if needed
+        }
+
+        // Remove from cart
+        function removeFromCart(id){
+            const cart = storage.getCart();
+            delete cart[id];
+            storage.setCart(cart);
+            showToast('Removed from cart');
+            renderCart();
+        }
+
+        // Render shop
+        function renderShop(){
+            const html = document.createElement('div');
+            const grid = document.createElement('div');
+            grid.className='grid';
+            ITEMS.forEach(it=>{
+                const c = document.createElement('div'); c.className='card';
+                const thumb = document.createElement('div'); thumb.className='thumb'; thumb.style.backgroundImage = `url('${it.img}')`;
+                const title = document.createElement('div'); title.className='title'; title.textContent=it.name;
+                const price = document.createElement('div'); price.className='price'; price.textContent=`$${it.price.toFixed(2)}`;
+                const actions = document.createElement('div'); actions.className='actions';
+                const addBtn = document.createElement('button'); addBtn.className='btn'; addBtn.textContent='Add to cart';
+                addBtn.addEventListener('click', ()=> addToCart(it.id,1));
+                const more = document.createElement('button'); more.className='btn ghost'; more.textContent='Details';
+                more.addEventListener('click', ()=> alert(`${it.name}\n\nPrice: $${it.price.toFixed(2)}\n\nThis is a demo product.`));
+                actions.append(addBtn, more);
+                c.append(thumb, title, price, actions);
+                grid.appendChild(c);
+            });
+            html.appendChild(grid);
+            app.innerHTML=''; app.appendChild(html);
+        }
+
+        // Render cart
+        function renderCart(){
+            const cart = storage.getCart();
+            const keys = Object.keys(cart);
+            const container = document.createElement('div');
+            const h = document.createElement('h2'); h.textContent='Your Cart';
+            container.appendChild(h);
+
+            if(keys.length===0){
+                const p = document.createElement('div'); p.className='muted'; p.textContent='Cart is empty. Go to Shop to add items.';
+                container.appendChild(p);
+            } else {
+                const list = document.createElement('div'); list.className='cart-list';
+                let total = 0;
+                keys.forEach(id=>{
+                    const item = ITEMS.find(x=>x.id===id);
+                    if(!item) return;
+                    const qty = cart[id];
+                    total += item.price * qty;
+                    const ci = document.createElement('div'); ci.className='cart-item';
+                    const t = document.createElement('div'); t.className='ci-thumb'; t.style.backgroundImage=`url('${item.img}')`;
+                    const meta = document.createElement('div'); meta.style.flex='1';
+                    const nm = document.createElement('div'); nm.textContent=item.name; nm.style.fontWeight='700'; nm.style.color='var(--accent)';
+                    const pr = document.createElement('div'); pr.className='muted'; pr.textContent=`$${item.price.toFixed(2)} each`;
+                    meta.append(nm, pr);
+
+                    const controls = document.createElement('div'); controls.style.display='flex'; controls.style.flexDirection='column'; controls.style.alignItems='flex-end'; controls.style.gap='8px';
+                    const qtyWrap = document.createElement('div'); qtyWrap.className='qty';
+                    const minus = document.createElement('button'); minus.className='navbtn'; minus.textContent='-';
+                    const qtyInput = document.createElement('input'); qtyInput.type='number'; qtyInput.min=1; qtyInput.value=qty;
+                    const plus = document.createElement('button'); plus.className='navbtn'; plus.textContent='+';
+                    minus.addEventListener('click', ()=> {
+                        const newQ = Math.max(1, (parseInt(qtyInput.value)||1) - 1);
+                        qtyInput.value = newQ;
+                        cart[id] = newQ;
+                        storage.setCart(cart);
+                        renderCart();
+                    });
+                    plus.addEventListener('click', ()=> {
+                        const newQ = (parseInt(qtyInput.value)||1) + 1;
+                        qtyInput.value = newQ;
+                        cart[id] = newQ;
+                        storage.setCart(cart);
+                        renderCart();
+                    });
+                    qtyInput.addEventListener('change', ()=> {
+                        const newQ = Math.max(1, parseInt(qtyInput.value)||1);
+                        qtyInput.value = newQ;
+                        cart[id] = newQ;
+                        storage.setCart(cart);
+                        renderCart();
+                    });
+                    qtyWrap.append(minus, qtyInput, plus);
+
+                    const remove = document.createElement('button'); remove.className='btn ghost'; remove.textContent='Remove';
+                    remove.addEventListener('click', ()=> removeFromCart(id));
+
+                    controls.append(qtyWrap, remove);
+
+                    const lineTotal = document.createElement('div'); lineTotal.style.fontWeight='700'; lineTotal.textContent=`$${(item.price * qty).toFixed(2)}`;
+                    controls.appendChild(lineTotal);
+
+                    ci.append(t, meta, controls);
+                    list.appendChild(ci);
+                });
+                container.appendChild(list);
+                const tl = document.createElement('div'); tl.style.marginTop='12px'; tl.style.display='flex'; tl.style.justifyContent='space-between'; tl.style.alignItems='center';
+                const totalLabel = document.createElement('div'); totalLabel.innerHTML=`<div class="muted">Subtotal</div><div style="font-weight:800;font-size:18px">$${total.toFixed(2)}</div>`;
+                const checkoutBtn = document.createElement('button'); checkoutBtn.className='btn'; checkoutBtn.textContent='Proceed to Checkout';
+                checkoutBtn.addEventListener('click', ()=> showView('checkout'));
+                tl.append(totalLabel, checkoutBtn);
+                container.appendChild(tl);
+            }
+            app.innerHTML=''; app.appendChild(container);
+        }
+
+        // Render checkout (fake)
+        function renderCheckout(){
+            const cart = storage.getCart();
+            const keys = Object.keys(cart);
+            const container = document.createElement('div');
+            const h = document.createElement('h2'); h.textContent='Checkout (Demo)';
+            container.appendChild(h);
+
+            if(keys.length===0){
+                const p = document.createElement('div'); p.className='muted'; p.textContent='Your cart is empty. Add items before checking out.';
+                container.appendChild(p);
+                app.innerHTML=''; app.appendChild(container);
+                return;
+            }
+
+            const orderSummary = document.createElement('div');
+            orderSummary.style.marginBottom='12px';
+            let total = 0;
+            keys.forEach(id=>{
+                const item = ITEMS.find(x=>x.id===id);
+                const qty = cart[id];
+                if(!item) return;
+                total += item.price * qty;
+                const row = document.createElement('div'); row.style.display='flex'; row.style.justifyContent='space-between'; row.style.marginBottom='6px';
+                row.innerHTML = `<div>${item.name} x${qty}</div><div>$${(item.price*qty).toFixed(2)}</div>`;
+                orderSummary.appendChild(row);
+            });
+            const ttl = document.createElement('div'); ttl.style.display='flex'; ttl.style.justifyContent='space-between'; ttl.style.fontWeight='800'; ttl.style.marginTop='8px';
+            ttl.innerHTML = `<div>Total</div><div>$${total.toFixed(2)}</div>`;
+            orderSummary.appendChild(ttl);
+            container.appendChild(orderSummary);
+
+            // Fake payment form (no processing)
+            const form = document.createElement('form');
+            form.addEventListener('submit', (e)=>{
+                e.preventDefault();
+                // create a demo order receipt, clear cart
+                const order = {
+                    id: 'ORD-' + Date.now(),
+                    items: storage.getCart(),
+                    total: total,
+                    date: new Date().toISOString(),
+                    name: form.elements['name'].value || 'Guest'
+                };
+                // Save to localStorage as demo receipts (optional)
+                const receipts = JSON.parse(localStorage.getItem('ecom_receipts_v1') || '[]');
+                receipts.push(order);
+                localStorage.setItem('ecom_receipts_v1', JSON.stringify(receipts));
+                storage.setCart({});
+                showToast('Order placed (demo). No payment was taken.');
+                renderCheckoutConfirmation(order);
+            });
+
+            form.innerHTML = `
+                <label><div class="muted">Full name</div><input name="name" required placeholder="Full name"></label>
+                <label><div class="muted">Shipping address</div><textarea name="address" rows="2" placeholder="Street, City, State"></textarea></label>
+                <label><div class="muted">Card (demo)</div><input name="card" placeholder="Card number (demo)"></label>
+                <div style="display:flex;gap:8px;">
+                    <input name="exp" placeholder="MM/YY">
+                    <input name="cvv" placeholder="CVV">
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button type="submit" class="btn">Place Order (Demo)</button>
+                    <button type="button" class="btn ghost" id="checkout-cancel">Back to Cart</button>
+                </div>
+            `;
+            container.appendChild(form);
+            app.innerHTML=''; app.appendChild(container);
+            document.getElementById('checkout-cancel').addEventListener('click', ()=> showView('cart'));
+        }
+
+        function renderCheckoutConfirmation(order){
+            const container = document.createElement('div');
+            const h = document.createElement('h2'); h.textContent='Order Confirmed (Demo)';
+            container.appendChild(h);
+            const p = document.createElement('div'); p.innerHTML = `<div class="muted">Order ID</div><div style="font-weight:800">${order.id}</div><div class="muted">Name</div><div>${order.name}</div><div class="muted">Note</div><div>No real payment was made. This is a demo checkout.</div>`;
+            container.appendChild(p);
+            const btn = document.createElement('button'); btn.className='btn'; btn.textContent='Back to Shop';
+            btn.addEventListener('click', ()=> showView('shop'));
+            container.appendChild(btn);
+            app.innerHTML=''; app.appendChild(container);
+            updateCartCount();
+        }
+
+        // Account creation (no email)
+        function renderAccount(){
+            const container = document.createElement('div');
+            const h = document.createElement('h2'); h.textContent='Account';
+            container.appendChild(h);
+
+            const currentUser = storage.getUser();
+            if(currentUser){
+                const info = document.createElement('div'); info.innerHTML = `<div class="muted">Logged in as</div><div style="font-weight:800">${currentUser.username}</div><div style="margin-top:8px;"><button class="btn" id="logout">Logout</button></div>`;
+                container.appendChild(info);
+                container.querySelector('#logout').addEventListener('click', ()=>{
+                    storage.setUser(null);
+                    localStorage.removeItem(KEY_USER);
+                    showToast('Logged out');
+                    renderAccount();
+                });
+            } else {
+                const form = document.createElement('form');
+                form.innerHTML = `
+                    <label><div class="muted">Username</div><input name="username" required placeholder="Choose a username"></label>
+                    <label><div class="muted">Password</div><input name="password" type="password" required placeholder="Choose a password"></label>
+                    <label><div class="muted">Full name</div><input name="fullname" placeholder="Full name (optional)"></label>
+                    <label><div class="muted">Address</div><textarea name="address" rows="2" placeholder="Street, City, State (optional)"></textarea></label>
+                    <div style="display:flex;gap:8px;">
+                        <button class="btn" type="submit">Create Account</button>
+                        <button class="btn ghost" id="view-accounts" type="button">View Saved Accounts</button>
+                    </div>
+                `;
+                form.addEventListener('submit', (e)=>{
+                    e.preventDefault();
+                    const u = form.elements['username'].value.trim();
+                    const p = form.elements['password'].value;
+                    const fullname = form.elements['fullname'].value.trim();
+                    const address = form.elements['address'].value.trim();
+                    const accounts = storage.getAccounts();
+                    if(accounts.find(a=>a.username===u)){ alert('Username already exists'); return; }
+                    // NOTE: passwords stored in cleartext here for demo only (local demo). Do NOT do this in real apps.
+                    const newAcct = { username:u, password:p, fullname, address, created:new Date().toISOString() };
+                    accounts.push(newAcct);
+                    storage.setAccounts(accounts);
+                    storage.setUser({ username:u, fullname });
+                    showToast('Account created locally (demo)');
+                    renderAccount();
+                });
+                container.appendChild(form);
+
+                const viewAccountsBtn = form.querySelector('#view-accounts');
+                viewAccountsBtn.addEventListener('click', ()=>{
+                    const accounts = storage.getAccounts();
+                    alert('Saved accounts (local only):\\n\\n' + (accounts.length? accounts.map(a=>`${a.username} — ${a.fullname||'no name'}`).join('\\n') : 'No accounts saved'));
+                });
+            }
+            app.innerHTML=''; app.appendChild(container);
+        }
+
+        // small toast
+        let toastTimer;
+        function showToast(text){
+            let t = document.getElementById('toast');
+            if(!t){
+                t = document.createElement('div'); t.id='toast';
+                Object.assign(t.style,{position:'fixed',right:'18px',bottom:'18px',background:'rgba(0,0,0,0.6)',padding:'10px 14px',borderRadius:'10px',color:'white',zIndex:99,boxShadow:'0 8px 20px rgba(0,0,0,0.6)'});
+                document.body.appendChild(t);
+            }
+            t.textContent = text;
+            t.style.opacity = '1';
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(()=>{ t.style.opacity='0'; }, 2400);
+        }
+
+        // Nav binding
+        navBtns.forEach(b=> b.addEventListener('click', ()=> showView(b.dataset.view)));
+
+        // init
+        updateCartCount();
+        showView('shop');
+
+        // Expose addToCart globally for quick console testing if desired:
+        window.ecom = { addToCart, ITEMS, storage };
+
+    </script>
+</body>
+</html>
